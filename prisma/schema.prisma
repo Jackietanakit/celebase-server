@@ -1,0 +1,195 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  uuid              String   @id
+  email             String   @unique
+  password          String
+  role              User_Role
+  verificationCode  String?
+  isVerified        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  User_Info         User_Info?
+  User_Fanbase      User_Fanbase[]
+  User_Event        User_Event[]
+  Payment_Info      Payment_Info[]
+  Delivery_Info     Delivery_Info[]
+}
+
+
+model User_Info {
+  user_uuid             String  @unique
+  username              String  @unique
+  display_name          String?
+  first_name            String?
+  last_name             String?
+  gender                Gender? @default(PREFER_NOT_TO_SAY)
+  address               String?
+  img_url               String?
+  cover_img_url         String?
+  national_id_img_url   String?
+  identity_img_url      String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  User                  User     @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade)
+  @@id([user_uuid, username])
+}
+
+model Fanbase {
+  id            Int      @id @default(autoincrement())
+  fbusername    String   @unique
+  fanbase_info  Fanbase_Info?
+  isVerified    Boolean  @default(false)
+  Event         Event[]
+  User_Fanbase  User_Fanbase[]
+}
+
+model Fanbase_Info {
+  fanbase_id    Int  @unique
+  name          String
+  artist_name   String
+  email         String?
+  address       String?
+  description   String?
+  img_url       String?
+  cover_img_url String?
+  twitter_url   String?
+  facebook_url  String?
+  instagram_url String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  Fanbase       Fanbase  @relation(fields: [fanbase_id], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id            Int      @id @default(autoincrement())
+  fanbase_id    Int
+  title         String
+  all_time      Boolean  @default(false)
+  start         DateTime?
+  end           DateTime?
+  location      String?
+  description   String?
+  img_url       String?
+  cover_img_url String?
+  status        Event_Status @default(ONGOING)
+  type          Event_Type @default(FREE)
+  max_capacity  Int?
+  max_fee       Decimal @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  Fanbase       Fanbase @relation(fields: [fanbase_id], references: [id], onDelete: Cascade)
+  User_Event    User_Event[]
+  Payment_Info  Payment_Info[]
+  Delivery_Info Delivery_Info[]
+}
+
+model User_Fanbase {
+  user_uuid   String
+  fanbase_id  Int
+  role        User_Fanbase_Role @default(FOLLOWER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  User        User     @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade)
+  Fanbase     Fanbase  @relation(fields: [fanbase_id], references: [id], onDelete: Cascade)
+  @@id([user_uuid, fanbase_id])
+}
+
+model User_Event {
+  user_uuid   String
+  event_id    Int
+  fee         Float @default(0)
+  status      User_Event_Status @default(INTERESTED)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  User        User     @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade)
+  Event       Event    @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  @@id([user_uuid, event_id])
+}
+
+model Payment_Info {
+  id              Int      @id @default(autoincrement())
+  user_uuid       String
+  event_id        Int
+  amount          Float
+  slip_image_url  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  User            User     @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade)
+  Event           Event    @relation(fields: [event_id], references: [id], onDelete: Cascade)
+}
+
+model Delivery_Info {
+  id            Int      @id @default(autoincrement())
+  tracking_no    String   @unique
+  item_name      String
+  user_uuid     String
+  event_id      Int
+  delivery_type Delivery_Type
+  date_sent     DateTime?
+  date_received DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  User          User     @relation(fields: [user_uuid], references: [uuid], onDelete: Cascade)
+  Event         Event  @relation(fields: [event_id], references: [id], onDelete: Cascade)
+}
+
+enum User_Role {
+  FANBASE 
+  USER
+  DEV
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum Event_Status {
+  ONGOING
+  DELAYED
+  FINISHED
+  CANCELED
+}
+
+enum Event_Type {
+  RAISE_FUND
+  DONATE
+  ENTRANCE_FEE
+  SHARED
+  FREE
+  DELIVERY
+}
+
+enum User_Event_Status {
+  INTERESTED
+  JOINED
+}
+
+enum User_Fanbase_Role {
+  FOLLOWER
+  STAFF
+  ADMIN
+}
+
+enum Delivery_Type {
+  EMS
+  KERRY
+  FLASH
+  NINJA
+  GRAB
+  LINEMAN
+  OTHER
+}
